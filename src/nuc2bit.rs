@@ -120,3 +120,40 @@ fn encode_lut(nuc: &[u8]) -> Vec<u64> {
 
     res
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils::encoding_equals;
+
+    #[test]
+    fn test_encode_lut() {
+        assert!(encoding_equals(&encode_lut(b"AUCGATCGATCGATCGATCGATCGATCGATCG"),
+                &vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32));
+        assert!(encoding_equals(&encode_lut(b"ATCG"), &vec![0b11011000], 4));
+    }
+
+    #[test]
+    fn test_encode_avx() {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("avx2") {
+                assert!(encoding_equals(&unsafe { encode_movemask_avx(b"AUCGATCGATCGATCGATCGATCGATCGATCG") },
+                        &vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32));
+                assert!(encoding_equals(&unsafe { encode_movemask_avx(b"ATCG") }, &vec![0b11011000], 4));
+            }
+        }
+    }
+
+    #[test]
+    fn test_encode_sse() {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("sse2") {
+                assert!(encoding_equals(&unsafe { encode_movemask_sse(b"AUCGATCGATCGATCGATCGATCGATCGATCG") },
+                        &vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32));
+                assert!(encoding_equals(&unsafe { encode_movemask_sse(b"ATCG") }, &vec![0b11011000], 4));
+            }
+        }
+    }
+}

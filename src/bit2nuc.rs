@@ -122,3 +122,39 @@ fn decode_lut(bits: &[u64], len: usize) -> Vec<u8> {
 
     unsafe { Vec::from_raw_parts(res_ptr, len, len) }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_decode_lut() {
+        assert_eq!(decode_lut(&vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32),
+                b"ATCGATCGATCGATCGATCGATCGATCGATCG");
+        assert_eq!(decode_lut(&vec![0b11011000], 4), b"ATCG");
+    }
+
+    #[test]
+    fn test_decode_avx() {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("avx2") {
+                assert_eq!(unsafe { decode_shuffle_avx(&vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32) },
+                        b"ATCGATCGATCGATCGATCGATCGATCGATCG");
+                assert_eq!(unsafe { decode_shuffle_avx(&vec![0b11011000], 4) }, b"ATCG");
+            }
+        }
+    }
+
+    #[test]
+    fn test_decode_sse() {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            if is_x86_feature_detected!("sse4.1") {
+                assert_eq!(unsafe { decode_shuffle_sse(&vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32) },
+                        b"ATCGATCGATCGATCGATCGATCGATCGATCG");
+                assert_eq!(unsafe { decode_shuffle_sse(&vec![0b11011000], 4) }, b"ATCG");
+            }
+        }
+    }
+}
