@@ -6,27 +6,27 @@ use std::arch::x86_64::*;
 
 use std::alloc;
 
-pub fn nuc2bit(nuc: &[u8]) -> Vec<u64> {
+pub fn encode(nuc: &[u8]) -> Vec<u64> {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
         if is_x86_feature_detected!("avx2") {
-            return unsafe { nuc2bit_movemask_avx(nuc) };
-        } else if is_x86_feature_detected!("sse4.1") {
-            return unsafe { nuc2bit_movemask_sse(nuc) };
+            return unsafe { encode_movemask_avx(nuc) };
+        } else if is_x86_feature_detected!("sse2") {
+            return unsafe { encode_movemask_sse(nuc) };
         }
     }
 
-    nuc2bit_lut(nuc)
+    encode_lut(nuc)
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[target_feature(enable = "avx2")]
-unsafe fn nuc2bit_movemask_avx(nuc: &[u8]) -> Vec<u64> {
+unsafe fn encode_movemask_avx(nuc: &[u8]) -> Vec<u64> {
     let ptr = nuc.as_ptr() as *const __m256i;
     let end_idx = nuc.len() / 32;
     let len = end_idx + if nuc.len() % 32 == 0 {0} else {1};
 
-    let layout = alloc::Layout::from_size_align_unchecked(len * 8, 8);
+    let layout = alloc::Layout::from_size_align_unchecked(len * 8, 32);
     let res_ptr = alloc::alloc(layout) as *mut u64;
 
     for i in 0..end_idx as isize {
@@ -51,20 +51,20 @@ unsafe fn nuc2bit_movemask_avx(nuc: &[u8]) -> Vec<u64> {
     }
 
     if nuc.len() % 32 > 0 {
-        *res_ptr.offset(end_idx as isize) = *nuc2bit_lut(&nuc[(end_idx * 32)..]).get_unchecked(0);
+        *res_ptr.offset(end_idx as isize) = *encode_lut(&nuc[(end_idx * 32)..]).get_unchecked(0);
     }
 
     Vec::from_raw_parts(res_ptr, len, len)
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[target_feature(enable = "ssse3")]
-unsafe fn nuc2bit_movemask_sse(nuc: &[u8]) -> Vec<u64> {
+#[target_feature(enable = "sse2")]
+unsafe fn encode_movemask_sse(nuc: &[u8]) -> Vec<u64> {
     let ptr = nuc.as_ptr() as *const __m128i;
     let end_idx = nuc.len() / 16;
     let len = nuc.len() / 32 + if nuc.len() % 32 == 0 {0} else {1};
 
-    let layout = alloc::Layout::from_size_align_unchecked(len * 8, 8);
+    let layout = alloc::Layout::from_size_align_unchecked(len * 8, 16);
     let res_ptr = alloc::alloc(layout) as *mut u32;
 
     for i in 0..end_idx as isize {
@@ -84,7 +84,7 @@ unsafe fn nuc2bit_movemask_sse(nuc: &[u8]) -> Vec<u64> {
     }
 
     if nuc.len() % 16 > 0 {
-        *res_ptr.offset(end_idx as isize) = *nuc2bit_lut(&nuc[(end_idx * 16)..]).get_unchecked(0) as u32;
+        *res_ptr.offset(end_idx as isize) = *encode_lut(&nuc[(end_idx * 16)..]).get_unchecked(0) as u32;
     }
 
     Vec::from_raw_parts(res_ptr as *mut u64, len, len)
@@ -93,19 +93,19 @@ unsafe fn nuc2bit_movemask_sse(nuc: &[u8]) -> Vec<u64> {
 static BYTE_LUT: [u8; 128] = {
     let mut lut = [0u8; 128];
     lut[b'a' as usize] = 0b00;
-    lut[b't' as usize] = 0b11;
-    lut[b'u' as usize] = 0b11;
+    lut[b't' as usize] = 0b10;
+    lut[b'u' as usize] = 0b10;
     lut[b'c' as usize] = 0b01;
-    lut[b'g' as usize] = 0b10;
+    lut[b'g' as usize] = 0b11;
     lut[b'A' as usize] = 0b00;
-    lut[b'T' as usize] = 0b11;
-    lut[b'U' as usize] = 0b11;
+    lut[b'T' as usize] = 0b10;
+    lut[b'U' as usize] = 0b10;
     lut[b'C' as usize] = 0b01;
-    lut[b'G' as usize] = 0b10;
+    lut[b'G' as usize] = 0b11;
     lut
 };
 
-fn nuc2bit_lut(nuc: &[u8]) -> Vec<u64> {
+fn encode_lut(nuc: &[u8]) -> Vec<u64> {
     let mut res = vec![0u64; (nuc.len() / 32) + if nuc.len() % 32 == 0 {0} else {1}];
 
     for i in 0..nuc.len() {
