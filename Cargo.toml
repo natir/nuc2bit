@@ -21,6 +21,9 @@ rand      = "0.7"
 default = []
 bench-internals = []
 
+[lib]
+bench = false
+
 [[bench]]
 name = "nuc2bit"
 path = "benches/nuc2bit.rs"
