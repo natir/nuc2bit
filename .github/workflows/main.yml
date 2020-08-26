@@ -31,13 +31,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [beta, stable, windows, macos]
+        build: [beta, stable, macos]
         include:
           - build: macos
             os: macos-latest
-            rust: stable
-          - build: windows
-            os: windows-latest
             rust: stable
           - build: beta
             os: ubuntu-latest
@@ -118,17 +115,17 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+#      - name: Run cargo fmt
+#        uses: actions-rs/cargo@v1
+#        with:
+#          command: fmt
+#          args: --all -- --check
+#
+#      - name: Run cargo clippy
+#        uses: actions-rs/cargo@v1
+#        with:
+#          command: clippy
+#          args: -- -D warnings
 
   publish:
     name: Publish (dry-run)
@@ -160,8 +157,8 @@ jobs:
           toolchain: 1.37.0
           override: true
 
-      - name: check if README matches MSRV defined here
-        run: grep '1.37.0' README.md
+      - name: check if Readme matches MSRV defined here
+        run: grep '1.37.0' Readme.md
 
       - name: Run tests
         uses: actions-rs/cargo@v1
