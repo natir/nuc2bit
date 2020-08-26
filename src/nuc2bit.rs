@@ -184,6 +184,12 @@ mod tests {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             if is_x86_feature_detected!("avx2") {
+                unsafe {
+                    println!(
+                        "{:?}",
+                        encode_movemask_avx(b"AUCGATCGATCGATCGATCGATCGATCGATCGAAA")
+                    )
+                };
                 assert!(encoding_equals(
                     &unsafe { encode_movemask_avx(b"AUCGATCGATCGATCGATCGATCGATCGATCG") },
                     &vec![0b1101100011011000110110001101100011011000110110001101100011011000],
@@ -218,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn test_iterator() {
+    fn test_encode_iterator() {
         let mut bits = Vec::new();
 
         for nuc in Encode::new(b"AUCGATCGATCGATCGATCGATCGATCGATCG") {

@@ -52,7 +52,7 @@ fn on_gc(c: &mut Criterion) {
 
     for gc_prev in 0..11 {
         let gc = gc_prev as f64 / 10.0;
-        let seq = utils::get_nuc(20000, gc);
+        let seq = utils::get_nuc(20_000, gc);
 
         g.bench_with_input(BenchmarkId::new("lut", gc), &seq, |b, seq| {
             b.iter(|| {

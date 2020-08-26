@@ -37,6 +37,10 @@ fn on_length(c: &mut Criterion) {
                 nuc2bit::bit2nuc::decode(bits, len);
             })
         });
+
+        g.bench_with_input(BenchmarkId::new("iterator", len), &bits, |b, bits| {
+            b.iter(|| for _ in nuc2bit::bit2nuc::Decode::new(bits, len) {})
+        });
     }
 }
 
@@ -48,30 +52,34 @@ fn on_gc(c: &mut Criterion) {
 
     for gc_prev in 0..11 {
         let gc = gc_prev as f64 / 10.0;
-        let bits = utils::get_bit(20000, gc);
+        let bits = utils::get_bit(20_000, gc);
 
         g.bench_with_input(BenchmarkId::new("lut", gc), &bits, |b, bits| {
             b.iter(|| {
-                nuc2bit::bit2nuc::pub_decode_lut(bits, 20000);
+                nuc2bit::bit2nuc::pub_decode_lut(bits, 20_000);
             })
         });
 
         g.bench_with_input(BenchmarkId::new("avx", gc), &bits, |b, bits| {
             b.iter(|| unsafe {
-                nuc2bit::bit2nuc::pub_decode_avx(bits, 20000);
+                nuc2bit::bit2nuc::pub_decode_avx(bits, 20_000);
             })
         });
 
         g.bench_with_input(BenchmarkId::new("sse", gc), &bits, |b, bits| {
             b.iter(|| unsafe {
-                nuc2bit::bit2nuc::pub_decode_sse(bits, 20000);
+                nuc2bit::bit2nuc::pub_decode_sse(bits, 20_000);
             })
         });
 
         g.bench_with_input(BenchmarkId::new("pub", gc), &bits, |b, bits| {
             b.iter(|| {
-                nuc2bit::bit2nuc::decode(bits, 20000);
+                nuc2bit::bit2nuc::decode(bits, 20_000);
             })
+        });
+
+        g.bench_with_input(BenchmarkId::new("iterator", gc), &bits, |b, bits| {
+            b.iter(|| for _ in nuc2bit::bit2nuc::Decode::new(bits, 20_000) {})
         });
     }
 }

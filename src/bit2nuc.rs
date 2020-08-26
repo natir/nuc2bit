@@ -158,6 +158,49 @@ pub unsafe fn pub_decode_sse(bits: &[u64], len: usize) -> Vec<u8> {
     decode_shuffle_sse(bits, len)
 }
 
+pub struct Decode<'a> {
+    array: &'a [u64],
+    pos_in_array: usize,
+    buffer: u64,
+    val_in_buffer: usize,
+    len: usize,
+}
+
+impl<'a> Decode<'a> {
+    pub fn new(bytes: &'a [u64], len: usize) -> Self {
+        Decode {
+            array: bytes,
+            pos_in_array: 0,
+            buffer: 0,
+            val_in_buffer: 0,
+            len,
+        }
+    }
+}
+
+impl<'a> Iterator for Decode<'a> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.len == 0 {
+            return None;
+        }
+
+        if self.val_in_buffer == 0 {
+            self.buffer = self.array[self.pos_in_array];
+            self.pos_in_array += 1;
+            self.val_in_buffer = 32;
+        }
+
+        let val = (self.buffer & 0b11) as usize;
+        self.buffer >>= 2;
+        self.val_in_buffer -= 1;
+        self.len -= 1;
+
+        unsafe { Some(*BITS_LUT.get_unchecked(val)) }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -214,5 +257,22 @@ mod tests {
                 assert_eq!(unsafe { decode_shuffle_sse(&vec![0b11011000], 4) }, b"ATCG");
             }
         }
+    }
+
+    #[test]
+    fn test_decode_iterator() {
+        assert_eq!(
+            b"ATCGATCGATCGATCGATCGATCGATCGATCG".to_vec(),
+            Decode::new(
+                &vec![0b1101100011011000110110001101100011011000110110001101100011011000],
+                32,
+            )
+            .collect::<Vec<u8>>()
+        );
+
+        assert_eq!(
+            b"ATCG".to_vec(),
+            Decode::new(&vec![0b11011000], 4).collect::<Vec<u8>>()
+        );
     }
 }
