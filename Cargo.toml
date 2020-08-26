@@ -6,7 +6,7 @@ description = "Fast way to convert nucleotide in 2 bit representation"
 license = "MIT"
 repository = "https://github.com/natir/nuc2bit"
 homepage = "https://github.com/natir/nuc2bit"
-readme = "README.md"
+readme = "Readme.md"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,6 +20,9 @@ rand      = "0.7"
 [features]
 default = []
 bench-internals = []
+
+[lib]
+bench = false
 
 [[bench]]
 name = "nuc2bit"
