@@ -37,6 +37,10 @@ fn on_length(c: &mut Criterion) {
                 nuc2bit::nuc2bit::encode(seq);
             })
         });
+
+        g.bench_with_input(BenchmarkId::new("iterator", len), &seq, |b, seq| {
+            b.iter(|| for _ in nuc2bit::nuc2bit::Encode::new(seq) {})
+        });
     }
 }
 
@@ -72,6 +76,10 @@ fn on_gc(c: &mut Criterion) {
             b.iter(|| {
                 nuc2bit::nuc2bit::encode(seq);
             })
+        });
+
+        g.bench_with_input(BenchmarkId::new("iterator", gc), &seq, |b, seq| {
+            b.iter(|| for _ in nuc2bit::nuc2bit::Encode::new(seq) {})
         });
     }
 }

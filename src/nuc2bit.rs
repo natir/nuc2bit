@@ -139,6 +139,31 @@ pub unsafe fn pub_encode_sse(nuc: &[u8]) -> Vec<u64> {
     encode_movemask_sse(nuc)
 }
 
+pub struct Encode<'a> {
+    nuc: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> Encode<'a> {
+    pub fn new(nuc: &'a [u8]) -> Self {
+        Encode { nuc, pos: 0 }
+    }
+}
+
+impl<'a> Iterator for Encode<'a> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos == self.nuc.len() {
+            return None;
+        }
+
+        self.pos += 1;
+
+        unsafe { Some(*BYTE_LUT.get_unchecked(*self.nuc.get_unchecked(self.pos - 1) as usize)) }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,5 +215,22 @@ mod tests {
                 ));
             }
         }
+    }
+
+    #[test]
+    fn test_iterator() {
+        let mut bits = Vec::new();
+
+        for nuc in Encode::new(b"AUCGATCGATCGATCGATCGATCGATCGATCG") {
+            bits.push(nuc);
+        }
+
+        assert_eq!(
+            bits,
+            vec![
+                0, 2, 1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2, 1, 3, 0, 2, 1, 3,
+                0, 2, 1, 3
+            ]
+        );
     }
 }
