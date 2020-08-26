@@ -24,7 +24,7 @@ pub fn encode(nuc: &[u8]) -> Vec<u64> {
 unsafe fn encode_movemask_avx(nuc: &[u8]) -> Vec<u64> {
     let ptr = nuc.as_ptr() as *const __m256i;
     let end_idx = nuc.len() / 32;
-    let len = end_idx + if nuc.len() % 32 == 0 {0} else {1};
+    let len = end_idx + if nuc.len() % 32 == 0 { 0 } else { 1 };
 
     let layout = alloc::Layout::from_size_align_unchecked(len * 8, 32);
     let res_ptr = alloc::alloc(layout) as *mut u64;
@@ -62,7 +62,7 @@ unsafe fn encode_movemask_avx(nuc: &[u8]) -> Vec<u64> {
 unsafe fn encode_movemask_sse(nuc: &[u8]) -> Vec<u64> {
     let ptr = nuc.as_ptr() as *const __m128i;
     let end_idx = nuc.len() / 16;
-    let len = nuc.len() / 32 + if nuc.len() % 32 == 0 {0} else {1};
+    let len = nuc.len() / 32 + if nuc.len() % 32 == 0 { 0 } else { 1 };
 
     let layout = alloc::Layout::from_size_align_unchecked(len * 8, 16);
     let res_ptr = alloc::alloc(layout) as *mut u32;
@@ -84,7 +84,8 @@ unsafe fn encode_movemask_sse(nuc: &[u8]) -> Vec<u64> {
     }
 
     if nuc.len() % 16 > 0 {
-        *res_ptr.offset(end_idx as isize) = *encode_lut(&nuc[(end_idx * 16)..]).get_unchecked(0) as u32;
+        *res_ptr.offset(end_idx as isize) =
+            *encode_lut(&nuc[(end_idx * 16)..]).get_unchecked(0) as u32;
     }
 
     Vec::from_raw_parts(res_ptr as *mut u64, len, len)
@@ -106,7 +107,7 @@ static BYTE_LUT: [u8; 128] = {
 };
 
 fn encode_lut(nuc: &[u8]) -> Vec<u64> {
-    let mut res = vec![0u64; (nuc.len() / 32) + if nuc.len() % 32 == 0 {0} else {1}];
+    let mut res = vec![0u64; (nuc.len() / 32) + if nuc.len() % 32 == 0 { 0 } else { 1 }];
 
     for i in 0..nuc.len() {
         let offset = i / 32;
@@ -121,6 +122,23 @@ fn encode_lut(nuc: &[u8]) -> Vec<u64> {
     res
 }
 
+#[cfg(feature = "bench-internals")]
+pub fn pub_encode_lut(nuc: &[u8]) -> Vec<u64> {
+    encode_lut(nuc)
+}
+
+#[cfg(feature = "bench-internals")]
+#[target_feature(enable = "avx2")]
+pub unsafe fn pub_encode_avx(nuc: &[u8]) -> Vec<u64> {
+    encode_movemask_avx(nuc)
+}
+
+#[cfg(feature = "bench-internals")]
+#[target_feature(enable = "sse2")]
+pub unsafe fn pub_encode_sse(nuc: &[u8]) -> Vec<u64> {
+    encode_movemask_sse(nuc)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -128,8 +146,11 @@ mod tests {
 
     #[test]
     fn test_encode_lut() {
-        assert!(encoding_equals(&encode_lut(b"AUCGATCGATCGATCGATCGATCGATCGATCG"),
-                &vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32));
+        assert!(encoding_equals(
+            &encode_lut(b"AUCGATCGATCGATCGATCGATCGATCGATCG"),
+            &vec![0b1101100011011000110110001101100011011000110110001101100011011000],
+            32
+        ));
         assert!(encoding_equals(&encode_lut(b"ATCG"), &vec![0b11011000], 4));
     }
 
@@ -138,9 +159,16 @@ mod tests {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             if is_x86_feature_detected!("avx2") {
-                assert!(encoding_equals(&unsafe { encode_movemask_avx(b"AUCGATCGATCGATCGATCGATCGATCGATCG") },
-                        &vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32));
-                assert!(encoding_equals(&unsafe { encode_movemask_avx(b"ATCG") }, &vec![0b11011000], 4));
+                assert!(encoding_equals(
+                    &unsafe { encode_movemask_avx(b"AUCGATCGATCGATCGATCGATCGATCGATCG") },
+                    &vec![0b1101100011011000110110001101100011011000110110001101100011011000],
+                    32
+                ));
+                assert!(encoding_equals(
+                    &unsafe { encode_movemask_avx(b"ATCG") },
+                    &vec![0b11011000],
+                    4
+                ));
             }
         }
     }
@@ -150,9 +178,16 @@ mod tests {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
             if is_x86_feature_detected!("sse2") {
-                assert!(encoding_equals(&unsafe { encode_movemask_sse(b"AUCGATCGATCGATCGATCGATCGATCGATCG") },
-                        &vec![0b1101100011011000110110001101100011011000110110001101100011011000], 32));
-                assert!(encoding_equals(&unsafe { encode_movemask_sse(b"ATCG") }, &vec![0b11011000], 4));
+                assert!(encoding_equals(
+                    &unsafe { encode_movemask_sse(b"AUCGATCGATCGATCGATCGATCGATCGATCG") },
+                    &vec![0b1101100011011000110110001101100011011000110110001101100011011000],
+                    32
+                ));
+                assert!(encoding_equals(
+                    &unsafe { encode_movemask_sse(b"ATCG") },
+                    &vec![0b11011000],
+                    4
+                ));
             }
         }
     }
