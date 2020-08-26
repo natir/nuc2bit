@@ -3,7 +3,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 mod utils;
 
 fn on_length(c: &mut Criterion) {
-    let mut g = c.benchmark_group("Length");
+    let mut g = c.benchmark_group("bit2nuc/length");
 
     g.sample_size(100);
     g.warm_up_time(std::time::Duration::from_secs(1));
@@ -41,7 +41,7 @@ fn on_length(c: &mut Criterion) {
 }
 
 fn on_gc(c: &mut Criterion) {
-    let mut g = c.benchmark_group("GC%");
+    let mut g = c.benchmark_group("bit2nuc/GC%");
 
     g.sample_size(100);
     g.warm_up_time(std::time::Duration::from_secs(1));
