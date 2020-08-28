@@ -52,9 +52,9 @@ unsafe fn popcount_avx(bits: &[u64], len: usize) -> usize {
             idx += 2;
         }
 
-        let sad0 = _mm256_sad_epu8(acc[0], _mm256_setzero_si256());
-        let sad1 = _mm256_sad_epu8(acc[1], _mm256_setzero_si256());
-        res = _mm256_add_epi64(res, _mm256_add_epi64(sad0, sad1));
+        let sum = _mm256_add_epi8(acc[0], acc[1]);
+        let sad = _mm256_sad_epu8(sum, _mm256_setzero_si256());
+        res = _mm256_add_epi64(res, sad);
 
         acc[0] = _mm256_setzero_si256();
         acc[1] = _mm256_setzero_si256();
@@ -100,9 +100,9 @@ unsafe fn popcount_sse(bits: &[u64], len: usize) -> usize {
             idx += 2;
         }
 
-        let sad0 = _mm_sad_epu8(acc[0], _mm_setzero_si128());
-        let sad1 = _mm_sad_epu8(acc[1], _mm_setzero_si128());
-        res = _mm_add_epi64(res, _mm_add_epi64(sad0, sad1));
+        let sum = _mm_add_epi8(acc[0], acc[1]);
+        let sad = _mm_sad_epu8(sum, _mm_setzero_si128());
+        res = _mm_add_epi64(res, sad);
 
         acc[0] = _mm_setzero_si128();
         acc[1] = _mm_setzero_si128();
