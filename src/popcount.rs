@@ -37,7 +37,9 @@ unsafe fn popcount_avx(bits: &[u64], len: usize) -> usize {
     let lut = _mm256_set_epi64x(0x0403030203020201, 0x0302020102010100, 0x0403030203020201, 0x0302020102010100);
     let mask = _mm256_set1_epi8(0x0F);
 
-    #[inline(always)]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[target_feature(enable = "avx2")]
+    #[inline]
     unsafe fn internal_popcount(lut: __m256i, mask: __m256i, a: __m256i) -> __m256i {
         let lo_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_and_si256(a, mask));
         let hi_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_srli_epi16(a, 4));
@@ -86,7 +88,9 @@ unsafe fn popcount_sse(bits: &[u64], len: usize) -> usize {
     let lut = _mm_set_epi64x(0x0403030203020201, 0x0302020102010100);
     let mask = _mm_set1_epi8(0x0F);
 
-    #[inline(always)]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[target_feature(enable = "ssse3")]
+    #[inline]
     unsafe fn internal_popcount(lut: __m128i, mask: __m128i, a: __m128i) -> __m128i {
         let lo_nybbles_lut = _mm_shuffle_epi8(lut, _mm_and_si128(a, mask));
         let hi_nybbles_lut = _mm_shuffle_epi8(lut, _mm_srli_epi16(a, 4));
