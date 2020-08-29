@@ -3,3 +3,4 @@ pub mod bit2nuc;
 pub mod complement;
 pub mod utils;
 pub mod popcount;
+pub mod hamming;
