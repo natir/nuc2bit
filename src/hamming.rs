@@ -44,7 +44,7 @@ unsafe fn hamming_avx(a: &[u64], b: &[u64], len: usize) -> usize {
     unsafe fn internal_hamming(lut: __m256i, mask: __m256i, a: __m256i, b: __m256i) -> __m256i {
         let xor = _mm256_xor_si256(a, b);
         let lo_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_and_si256(xor, mask));
-        let hi_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_srli_epi16(xor, 4));
+        let hi_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_and_si256(_mm256_srli_epi16(xor, 4), mask));
         _mm256_add_epi8(lo_nybbles_lut, hi_nybbles_lut)
     }
 
@@ -101,7 +101,7 @@ unsafe fn hamming_sse(a: &[u64], b: &[u64], len: usize) -> usize {
     unsafe fn internal_hamming(lut: __m128i, mask: __m128i, a: __m128i, b: __m128i) -> __m128i {
         let xor = _mm_xor_si128(a, b);
         let lo_nybbles_lut = _mm_shuffle_epi8(lut, _mm_and_si128(xor, mask));
-        let hi_nybbles_lut = _mm_shuffle_epi8(lut, _mm_srli_epi16(xor, 4));
+        let hi_nybbles_lut = _mm_shuffle_epi8(lut, _mm_and_si128(_mm_srli_epi16(xor, 4), mask));
         _mm_add_epi8(lo_nybbles_lut, hi_nybbles_lut)
     }
 

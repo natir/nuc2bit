@@ -42,7 +42,7 @@ unsafe fn popcount_avx(bits: &[u64], len: usize) -> usize {
     #[inline]
     unsafe fn internal_popcount(lut: __m256i, mask: __m256i, a: __m256i) -> __m256i {
         let lo_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_and_si256(a, mask));
-        let hi_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_srli_epi16(a, 4));
+        let hi_nybbles_lut = _mm256_shuffle_epi8(lut, _mm256_and_si256(_mm256_srli_epi16(a, 4), mask));
         _mm256_add_epi8(lo_nybbles_lut, hi_nybbles_lut)
     }
 
@@ -93,7 +93,7 @@ unsafe fn popcount_sse(bits: &[u64], len: usize) -> usize {
     #[inline]
     unsafe fn internal_popcount(lut: __m128i, mask: __m128i, a: __m128i) -> __m128i {
         let lo_nybbles_lut = _mm_shuffle_epi8(lut, _mm_and_si128(a, mask));
-        let hi_nybbles_lut = _mm_shuffle_epi8(lut, _mm_srli_epi16(a, 4));
+        let hi_nybbles_lut = _mm_shuffle_epi8(lut, _mm_and_si128(_mm_srli_epi16(a, 4), mask));
         _mm_add_epi8(lo_nybbles_lut, hi_nybbles_lut)
     }
 
