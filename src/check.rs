@@ -25,32 +25,32 @@ unsafe fn check_avx(nuc: &[u8]) -> bool {
 
     let lut = {
         let mut lut_hi = 0i64;
-        lut_hi |= 1i64 << ((b'A' as i64) - 64);
-        lut_hi |= 1i64 << ((b'T' as i64) - 64);
-        lut_hi |= 1i64 << ((b'U' as i64) - 64);
-        lut_hi |= 1i64 << ((b'C' as i64) - 64);
-        lut_hi |= 1i64 << ((b'G' as i64) - 64);
-        lut_hi |= 1i64 << ((b'a' as i64) - 64);
-        lut_hi |= 1i64 << ((b't' as i64) - 64);
-        lut_hi |= 1i64 << ((b'u' as i64) - 64);
-        lut_hi |= 1i64 << ((b'c' as i64) - 64);
-        lut_hi |= 1i64 << ((b'g' as i64) - 64);
+        lut_hi |= 1i64 << ((b'A' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'T' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'U' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'C' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'G' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'a' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b't' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'u' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'c' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'g' as i64) - 64i64);
         _mm256_set_epi64x(!lut_hi, -1i64, !lut_hi, -1i64)
     };
-    let shift_lut = _mm256_set_epi64x(0i64, 0x8040201008040201u64 as i64, 0i64, 0x8040201008040201u64 as i64);
-    let mask = _mm256_set1_epi8(0b00000111);
+    let shift_lut = _mm256_set1_epi64x(0x8040201008040201u64 as i64);
+    let mask = _mm256_set1_epi8(0b00001111);
 
     for i in 0..end_idx as isize {
         let v = _mm256_loadu_si256(ptr.offset(i));
-        let zero_neg = _mm256_max_epi8(v, _mm256_setzero_si256());
-        let lo_lut = _mm256_shuffle_epi8(lut, zero_neg);
-        let hi = _mm256_and_si256(_mm256_srli_epi16(v, 4), mask);
-        // if MSB of a byte in v is 1, then the corresponding byte in
-        // lo_lut should be all ones, guaranteeing that the check fails
-        let hi_lut = _mm256_shuffle_epi8(shift_lut, hi); // convert byte x into (1 << x)
+        // use high 4 bits to lookup 8-bit chunk
+        let hi = _mm256_and_si256(_mm256_srli_epi16(v, 3), mask);
+        let hi_lut = _mm256_shuffle_epi8(lut, hi);
+        let lo_lut = _mm256_shuffle_epi8(shift_lut, v); // convert byte x into (1 << x)
+        // separately handle bytes where MSB is 1
+        let lo_lut = _mm256_or_si256(lo_lut, _mm256_cmpgt_epi8(_mm256_setzero_si256(), v));
 
         // check if (lo_lut & hi_lut) has any ones
-        if _mm256_testz_si256(lo_lut, hi_lut) != 0 {
+        if _mm256_testz_si256(lo_lut, hi_lut) == 0 {
             return false;
         }
     }
@@ -71,32 +71,32 @@ unsafe fn check_sse(nuc: &[u8]) -> bool {
 
     let lut = {
         let mut lut_hi = 0i64;
-        lut_hi |= 1i64 << ((b'A' as i64) - 64);
-        lut_hi |= 1i64 << ((b'T' as i64) - 64);
-        lut_hi |= 1i64 << ((b'U' as i64) - 64);
-        lut_hi |= 1i64 << ((b'C' as i64) - 64);
-        lut_hi |= 1i64 << ((b'G' as i64) - 64);
-        lut_hi |= 1i64 << ((b'a' as i64) - 64);
-        lut_hi |= 1i64 << ((b't' as i64) - 64);
-        lut_hi |= 1i64 << ((b'u' as i64) - 64);
-        lut_hi |= 1i64 << ((b'c' as i64) - 64);
-        lut_hi |= 1i64 << ((b'g' as i64) - 64);
+        lut_hi |= 1i64 << ((b'A' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'T' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'U' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'C' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'G' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'a' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b't' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'u' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'c' as i64) - 64i64);
+        lut_hi |= 1i64 << ((b'g' as i64) - 64i64);
         _mm_set_epi64x(!lut_hi, -1i64)
     };
-    let shift_lut = _mm_set_epi64x(0i64, 0x8040201008040201u64 as i64);
-    let mask = _mm_set1_epi8(0b00000111);
+    let shift_lut = _mm_set1_epi64x(0x8040201008040201u64 as i64);
+    let mask = _mm_set1_epi8(0b00001111);
 
     for i in 0..end_idx as isize {
         let v = _mm_loadu_si128(ptr.offset(i));
-        let zero_neg = _mm_max_epi8(v, _mm_setzero_si128());
-        let lo_lut = _mm_shuffle_epi8(lut, zero_neg);
-        let hi = _mm_and_si128(_mm_srli_epi16(v, 4), mask);
-        // if MSB of a byte in v is 1, then the corresponding byte in
-        // lo_lut should be all ones, guaranteeing that the check fails
-        let hi_lut = _mm_shuffle_epi8(shift_lut, hi); // convert byte x into (1 << x)
+        // use high 4 bits to lookup 8-bit chunk
+        let hi = _mm_and_si128(_mm_srli_epi16(v, 3), mask);
+        let hi_lut = _mm_shuffle_epi8(lut, hi);
+        let lo_lut = _mm_shuffle_epi8(shift_lut, v); // convert byte x into (1 << x)
+        // separately handle bytes where MSB is 1
+        let lo_lut = _mm_or_si128(lo_lut, _mm_cmpgt_epi8(_mm_setzero_si128(), v));
 
         // check if (lo_lut & hi_lut) has any ones
-        if _mm_testz_si128(lo_lut, hi_lut) != 0 {
+        if _mm_testz_si128(lo_lut, hi_lut) == 0 {
             return false;
         }
     }
@@ -173,10 +173,10 @@ mod tests {
     #[test]
     fn test_check_scalar() {
         assert_eq!(check_scalar(b"AUCGATCGATCGATCGATCGATCGATCGATCG"), true);
-        assert_eq!(check_scalar(b"AUCGATCGATCGATCGATCGATCGATCGATCGb"), false);
+        assert_eq!(check_scalar(b"bAUCGATCGATCGATCGATCGATCGATCGATCG"), false);
         assert_eq!(check_scalar(b"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"), false);
         assert_eq!(check_scalar(b"ATUCG"), true);
-        assert_eq!(check_scalar(b"ATUCG "), false);
+        assert_eq!(check_scalar(b"ATUCG                           "), false);
     }
 
     #[test]
@@ -185,10 +185,10 @@ mod tests {
         {
             if is_x86_feature_detected!("avx2") {
                 assert_eq!(unsafe { check_avx(b"AUCGATCGATCGATCGATCGATCGATCGATCG") }, true);
-                assert_eq!(unsafe { check_avx(b"AUCGATCGATCGATCGATCGATCGATCGATCGb") }, false);
+                assert_eq!(unsafe { check_avx(b"bAUCGATCGATCGATCGATCGATCGATCGATCG") }, false);
                 assert_eq!(unsafe { check_avx(b"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB") }, false);
                 assert_eq!(unsafe { check_avx(b"ATUCG") }, true);
-                assert_eq!(unsafe { check_avx(b"ATUCG ") }, false);
+                assert_eq!(unsafe { check_avx(b"ATUCG                           ") }, false);
             }
         }
     }
@@ -199,10 +199,10 @@ mod tests {
         {
             if is_x86_feature_detected!("sse4.1") {
                 assert_eq!(unsafe { check_sse(b"AUCGATCGATCGATCGATCGATCGATCGATCG") }, true);
-                assert_eq!(unsafe { check_sse(b"AUCGATCGATCGATCGATCGATCGATCGATCGb") }, false);
+                assert_eq!(unsafe { check_sse(b"bAUCGATCGATCGATCGATCGATCGATCGATCG") }, false);
                 assert_eq!(unsafe { check_sse(b"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB") }, false);
                 assert_eq!(unsafe { check_sse(b"ATUCG") }, true);
-                assert_eq!(unsafe { check_sse(b"ATUCG ") }, false);
+                assert_eq!(unsafe { check_sse(b"ATUCG                           ") }, false);
             }
         }
     }
